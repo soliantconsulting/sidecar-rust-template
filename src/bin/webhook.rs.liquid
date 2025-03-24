@@ -1,0 +1,97 @@
+use async_trait::async_trait;
+use aws_config::BehaviorVersion;
+use aws_lambda_events::http::StatusCode;
+use lambda_http::http::Uri;
+use lambda_http::tracing::debug;
+use lambda_http::{tracing, Body, Request, RequestExt, Response};
+use serde_json::{json, Value};
+use {{ crate_name }}::config::get_config;
+use {{ crate_name }}::http::{
+    e400, parse_body, start_http_service, HttpError, HttpErrorResponse, HttpErrorSource,
+    HttpHandler,
+};
+
+struct Handler {
+    sqs_client: aws_sdk_sqs::Client,
+    queue_url: String,
+}
+
+#[async_trait]
+impl HttpHandler for Handler {
+    async fn handle(&self, request: Request) -> Result<Response<Body>, HttpError> {
+        let body: Value = parse_body(&request).map_err(e400)?;
+
+        self.sqs_client
+            .send_message()
+            .queue_url(&self.queue_url)
+            .message_body(body.to_string())
+            .send()
+            .await?;
+
+        let response = Response::builder()
+            .status(StatusCode::OK)
+            .header("content-type", "text/xml")
+            .body(Body::Text("<Response/>".to_string()))?;
+
+        Ok(response)
+    }
+}
+
+type HmacSha1 = Hmac<Sha1>;
+
+impl Handler {
+    fn get_validation_signature(&self, url: &str, sorted_concatenated_params: &str) -> Vec<u8> {
+        debug!(
+            "Creating signature for URL {} with parameters {}",
+            url, sorted_concatenated_params
+        );
+
+        let url_with_params = format!("{}{}", url, sorted_concatenated_params);
+        let mut mac = HmacSha1::new_from_slice(&self.signing_key).unwrap();
+        mac.update(url_with_params.as_bytes());
+        mac.finalize().into_bytes().to_vec()
+    }
+}
+
+fn compare(x: &[u8], y: &[u8]) -> bool {
+    x.ct_eq(y).into()
+}
+
+fn build_url_string(uri: &Uri, include_port: bool) -> String {
+    let scheme = uri.scheme_str().unwrap();
+
+    let port_part = if include_port {
+        format!(
+            ":{}",
+            uri.port_u16()
+                .unwrap_or_else(|| if scheme == "http" { 80 } else { 443 })
+        )
+    } else {
+        String::new()
+    };
+
+    format!(
+        "{}://{}{}/{}{}",
+        scheme,
+        uri.host().unwrap(),
+        port_part,
+        uri.path().trim_start_matches('/'),
+        uri.query()
+            .map_or(String::new(), |query| format!("?{}", query)),
+    )
+}
+
+#[tokio::main]
+async fn main() -> Result<(), lambda_http::Error> {
+    tracing::init_default_subscriber();
+
+    let config = get_config().await?;
+    let aws_config = aws_config::load_defaults(BehaviorVersion::latest()).await;
+    let handler = Handler {
+        sqs_client: aws_sdk_sqs::Client::new(&aws_config),
+        queue_url: std::env::var("QUEUE_URL").expect("QUEUE_URL not set"),
+        signing_key: config.signing_key.into_bytes(),
+    };
+
+    start_http_service(handler).await
+}

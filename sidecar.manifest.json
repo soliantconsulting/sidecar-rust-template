@@ -1,0 +1,78 @@
+{
+    "$schema": "https://sidecar-schema-schemabucket79ee2269-zgpcvb0mi67q.s3.us-east-1.amazonaws.com/manifest.schema.json",
+    "config": {
+        "type": "object",
+        "properties": {
+            "fileMaker": {
+                "title": "FileMaker",
+                "type": "object",
+                "properties": {
+                    "hostname": { "title": "Hostname", "type": "string", "format": "hostname" },
+                    "database": { "title": "Database", "type": "string", "minLength": 1 },
+                    "username": { "title": "Username", "type": "string", "minLength": 1 },
+                    "password": {
+                        "title": "Password",
+                        "type": "string",
+                        "minLength": 1,
+                        "maskValue": true,
+                        "disableTrim": true
+                    },
+                    "scriptName": { "title": "Script name", "type": "string", "minLength": 1 }
+                },
+                "required": ["hostname", "database", "username", "password", "scriptName"],
+                "order": ["hostname", "database", "username", "password", "scriptName"]
+            }
+        }
+    },
+    "outputs": {
+        "type": "object",
+        "properties": {
+            "endpoint": {
+                "title": "Endpoint",
+                "type": "string",
+                "format": "uri",
+                "cloudFormationName": "RestApiEndpoint"
+            }
+        },
+        "required": ["endpoint"],
+        "order": ["endpoint"]
+    },
+    "resources": [
+        {
+            "type": "rest_api",
+            "label": "REST API",
+            "nameOutputKey": "RestApiName",
+            "arnOutputKey": "RestApiArn"
+        },
+        {
+            "type": "lambda_function",
+            "label": "Webhook Function",
+            "nameOutputKey": "WebhookFunctionName",
+            "arnOutputKey": "WebhookFunctionArn"
+        },
+        {
+            "type": "log_group",
+            "label": "Webhook Function Log Group",
+            "nameOutputKey": "WebhookFunctionLogGroupName",
+            "arnOutputKey": "WebhookFunctionLogGroupArn"
+        },
+        {
+            "type": "lambda_function",
+            "label": "Process Queue Function",
+            "nameOutputKey": "ProcessQueueFunctionName",
+            "arnOutputKey": "ProcessQueueFunctionArn"
+        },
+        {
+            "type": "log_group",
+            "label": "Process Queue Log Group",
+            "nameOutputKey": "ProcessQueueFunctionLogGroupName",
+            "arnOutputKey": "ProcessQueueFunctionLogGroupArn"
+        },
+        {
+            "type": "sqs_queue",
+            "label": "SQS Queue",
+            "nameOutputKey": "QueueName",
+            "arnOutputKey": "QueueArn"
+        }
+    ]
+}

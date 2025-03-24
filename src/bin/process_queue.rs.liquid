@@ -1,0 +1,83 @@
+use aws_lambda_events::event::sqs::SqsEvent;
+use aws_lambda_events::sqs::{BatchItemFailure, SqsBatchResponse};
+use fm_script_client::data_api::{DataApiScriptClient, ScriptLayoutContext};
+use fm_script_client::{Connection, ScriptClient};
+use fm_script_client::odata_api::ODataApiScriptClient;
+use lambda_http::tracing::warn;
+use lambda_runtime::tracing::error;
+use lambda_runtime::{run, service_fn, tracing, LambdaEvent};
+use serde::Deserialize;
+use serde_json::Value;
+use {{ crate_name }}::config::get_config;
+
+struct Handler {
+    script_client: ODataApiScriptClient,
+    script_name: String,
+}
+
+#[derive(Deserialize)]
+struct EmptyResponse {}
+
+impl Handler {
+    async fn handle(
+        &self,
+        event: LambdaEvent<SqsEvent>,
+    ) -> Result<SqsBatchResponse, lambda_runtime::Error> {
+        let mut batch_item_failures = Vec::new();
+
+        for record in event.payload.records {
+            let Some(body) = record.body else {
+                warn!("Message contains no body");
+                continue;
+            };
+
+            let Ok(body) = serde_json::from_str::<Value>(&body) else {
+                warn!("Message contains invalid JSON");
+                continue;
+            };
+
+            if let Err(err) = self
+                .script_client
+                .execute::<EmptyResponse, _>(&self.script_name, Some(body))
+                .await
+            {
+                error!("Failed to execute script: {:?}", err);
+                batch_item_failures.push(BatchItemFailure {
+                    item_identifier: record.message_id.unwrap(),
+                });
+            };
+        }
+
+        Ok(SqsBatchResponse {
+            batch_item_failures,
+        })
+    }
+}
+
+#[tokio::main]
+async fn main() -> Result<(), lambda_runtime::Error> {
+    tracing::init_default_subscriber();
+
+    let config = get_config().await?;
+    let script_client = ODataApiScriptClient::new(
+        Connection::new(
+            config.file_maker.hostname,
+            config.file_maker.database,
+            config.file_maker.username,
+            config.file_maker.password,
+        ),
+    );
+
+    let handler = Handler {
+        script_client,
+        script_name: config.file_maker.script_name,
+    };
+    let handler_ref = &handler;
+
+    run(service_fn(move |request| async move {
+        handler_ref.handle(request).await
+    }))
+    .await?;
+
+    Ok(())
+}
