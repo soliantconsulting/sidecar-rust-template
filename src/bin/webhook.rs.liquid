@@ -1,14 +1,11 @@
 use async_trait::async_trait;
 use aws_config::BehaviorVersion;
 use aws_lambda_events::http::StatusCode;
-use lambda_http::http::Uri;
-use lambda_http::tracing::debug;
-use lambda_http::{tracing, Body, Request, RequestExt, Response};
-use serde_json::{json, Value};
+use lambda_http::{tracing, Body, Request, Response};
+use serde_json::Value;
 use {{ crate_name }}::config::get_config;
 use {{ crate_name }}::http::{
-    e400, parse_body, start_http_service, HttpError, HttpErrorResponse, HttpErrorSource,
-    HttpHandler,
+    e400, parse_body, start_http_service, HttpError, HttpHandler,
 };
 
 struct Handler {
@@ -29,9 +26,8 @@ impl HttpHandler for Handler {
             .await?;
 
         let response = Response::builder()
-            .status(StatusCode::OK)
-            .header("content-type", "text/xml")
-            .body(Body::Text("<Response/>".to_string()))?;
+                .status(StatusCode::ACCEPTED)
+                .body(Body::Empty)?;
 
         Ok(response)
     }
