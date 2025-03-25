@@ -64,7 +64,7 @@
         },
         {
             "type": "log_group",
-            "label": "Process Queue Log Group",
+            "label": "Process Queue Function Log Group",
             "nameOutputKey": "ProcessQueueFunctionLogGroupName",
             "arnOutputKey": "ProcessQueueFunctionLogGroupArn"
         },
