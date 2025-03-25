@@ -4,7 +4,7 @@
     "type": "module",
     "private": true,
     "scripts": {
-        "boot": "pnpm i && cargo fetch",
+        "boot": "pnpm i && cargo fetch && pnpm check && cargo fmt",
         "build": "tsc",
         "format": "biome format . --write",
         "check": "biome check . --write",
