@@ -22,7 +22,9 @@
                 "required": ["hostname", "database", "username", "password", "scriptName"],
                 "order": ["hostname", "database", "username", "password", "scriptName"]
             }
-        }
+        },
+        "required": ["FileMaker"],
+        "order": ["FileMaker"]
     },
     "outputs": {
         "type": "object",
