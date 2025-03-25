@@ -37,50 +37,6 @@ impl HttpHandler for Handler {
     }
 }
 
-type HmacSha1 = Hmac<Sha1>;
-
-impl Handler {
-    fn get_validation_signature(&self, url: &str, sorted_concatenated_params: &str) -> Vec<u8> {
-        debug!(
-            "Creating signature for URL {} with parameters {}",
-            url, sorted_concatenated_params
-        );
-
-        let url_with_params = format!("{}{}", url, sorted_concatenated_params);
-        let mut mac = HmacSha1::new_from_slice(&self.signing_key).unwrap();
-        mac.update(url_with_params.as_bytes());
-        mac.finalize().into_bytes().to_vec()
-    }
-}
-
-fn compare(x: &[u8], y: &[u8]) -> bool {
-    x.ct_eq(y).into()
-}
-
-fn build_url_string(uri: &Uri, include_port: bool) -> String {
-    let scheme = uri.scheme_str().unwrap();
-
-    let port_part = if include_port {
-        format!(
-            ":{}",
-            uri.port_u16()
-                .unwrap_or_else(|| if scheme == "http" { 80 } else { 443 })
-        )
-    } else {
-        String::new()
-    };
-
-    format!(
-        "{}://{}{}/{}{}",
-        scheme,
-        uri.host().unwrap(),
-        port_part,
-        uri.path().trim_start_matches('/'),
-        uri.query()
-            .map_or(String::new(), |query| format!("?{}", query)),
-    )
-}
-
 #[tokio::main]
 async fn main() -> Result<(), lambda_http::Error> {
     tracing::init_default_subscriber();

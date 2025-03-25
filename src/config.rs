@@ -15,7 +15,6 @@ pub struct FileMakerConfig {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
-    pub signing_key: String,
     pub file_maker: FileMakerConfig,
 }
 
