@@ -6,7 +6,6 @@ use fm_script_client::odata_api::ODataApiScriptClient;
 use lambda_http::tracing::warn;
 use lambda_runtime::tracing::error;
 use lambda_runtime::{run, service_fn, tracing, LambdaEvent};
-use serde::Deserialize;
 use serde_json::Value;
 use {{ crate_name }}::config::get_config;
 
@@ -14,9 +13,6 @@ struct Handler {
     script_client: ODataApiScriptClient,
     script_name: String,
 }
-
-#[derive(Deserialize)]
-struct EmptyResponse {}
 
 impl Handler {
     async fn handle(
@@ -38,7 +34,7 @@ impl Handler {
 
             if let Err(err) = self
                 .script_client
-                .execute::<EmptyResponse, _>(&self.script_name, Some(body))
+                .execute::<Value, _>(&self.script_name, Some(body))
                 .await
             {
                 error!("Failed to execute script: {:?}", err);
