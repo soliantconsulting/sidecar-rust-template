@@ -13,7 +13,7 @@ export class LambdaStack extends Stack {
         super(scope, id);
 
         const api = new RestApi(this, "RestApi", {
-            restApiName: this.stackName,
+            restApiName: Fn.ref("AWS::StackName"),
             endpointTypes: [EndpointType.REGIONAL],
         });
 
@@ -24,9 +24,9 @@ export class LambdaStack extends Stack {
             value: api.restApiName,
         });
         new CfnOutput(this, "RestApiArn", {
-            value: Fn.sub(
-                `arn:aws:apigateway:$\{AWS::Region}::/restapis/${api.restApiId}`,
-            ),
+            value: Fn.sub("arn:aws:apigateway:${AWS::Region}::/restapis/${RestApiId}", {
+                RestApiId: api.restApiId,
+            }),
         });
 
         const configParameterName = new CfnParameter(this, "ConfigParameterName");
