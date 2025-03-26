@@ -23,8 +23,8 @@
                 "order": ["hostname", "database", "username", "password", "scriptName"]
             }
         },
-        "required": ["FileMaker"],
-        "order": ["FileMaker"]
+        "required": ["fileMaker"],
+        "order": ["fileMaker"]
     },
     "outputs": {
         "type": "object",
