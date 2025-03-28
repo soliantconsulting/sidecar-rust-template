@@ -68,3 +68,20 @@ definitions:
           - export SIDECAR_NAME={{ project-name | remove_first: "sidecar-" }}
           - ./bitbucket/deploy.sh $BITBUCKET_DEPLOYMENT_ENVIRONMENT
           - ./bitbucket/save-target.sh
+
+pipelines:
+  branches:
+    main:
+      - step: *check
+      - step:
+          <<: *deploy
+          name: Deploy Staging
+          deployment: staging
+      - step:
+          <<: *deploy
+          name: Deploy Production
+          deployment: production
+          trigger: manual
+  pull-requests:
+    '**':
+      - step: *check
