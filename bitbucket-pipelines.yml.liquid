@@ -1,6 +1,5 @@
 image:
-  name: cimg/rust:1.85.0-node
-  run-as-user: 0
+  name: public.ecr.aws/w3q5c7o4/rust-ci:1.85.1.2
 
 definitions:
   caches:
@@ -9,12 +8,12 @@ definitions:
       key:
         files:
           - Cargo.lock
-      path: /home/circleci/.cargo/registry/index
+      path: /usr/local/cargo/registry/index
     cargo-registry-cache:
       key:
         files:
           - Cargo.lock
-      path: /home/circleci/.cargo/registry/cache
+      path: /usr/local/cargo/registry/cache
     rust-target-debug:
       key:
         files:
@@ -33,7 +32,6 @@ definitions:
           - 'linux'
           - 'spot'
         script:
-          - export HOME=/home/circleci
           - corepack enable
           - pnpm install
           - ./bitbucket/restore-target.sh
@@ -57,37 +55,16 @@ definitions:
           - cargo-registry-cache
           - rust-target-release
         script:
-          - export HOME=/home/circleci
           # Configure OIDC
           - export AWS_REGION=us-east-1
           - export AWS_ROLE_ARN=arn:aws:iam::163620805665:role/sidecar-openid-connect-ro-BitbucketDeployRole52FEE1-c49Fm2YAr083
           - export AWS_WEB_IDENTITY_TOKEN_FILE=$(pwd)/web-identity-token
           - echo $BITBUCKET_STEP_OIDC_TOKEN > $(pwd)/web-identity-token
           # Install dependencies
-          - npm install -g @ziglang/cli
           - corepack enable
           - pnpm install
-          - curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
-          - cargo binstall cargo-lambda
           # Deploy
           - ./bitbucket/restore-target.sh
           - export SIDECAR_NAME={{ project-name | remove_first: "sidecar-" }}
           - ./bitbucket/deploy.sh $BITBUCKET_DEPLOYMENT_ENVIRONMENT
           - ./bitbucket/save-target.sh
-
-pipelines:
-  branches:
-    main:
-      - step: *check
-      - step:
-          <<: *deploy
-          name: Deploy Staging
-          deployment: staging
-      - step:
-          <<: *deploy
-          name: Deploy Production
-          deployment: production
-          trigger: manual
-  pull-requests:
-    '**':
-      - step: *check

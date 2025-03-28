@@ -7,9 +7,13 @@ ENV=$1
 if [ "$ENV" == "staging" ]; then
   export SIDECAR_VERSION=main
 elif [ "$ENV" == "production" ]; then
-  pnpm semantic-release --dry-run
+  if pnpm semantic-release --dry-run | grep -q "No release published"; then
+    echo "No new release. Aborting."
+    exit 1
+  fi
+
   source /tmp/sidecar.env
-  pnpm semantic-release-cargo prepare "$SIDECAR_VERSION"
+  semantic-release-cargo prepare "$SIDECAR_VERSION"
   pnpm semantic-release
 else
   echo "Invalid environment: $ENV"
