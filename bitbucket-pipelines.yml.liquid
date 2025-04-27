@@ -77,6 +77,25 @@ pipelines:
           <<: *deploy
           name: Deploy Staging
           deployment: staging
+          artifacts:
+              - main-template-object-key
+      - step:
+            name: Test
+            runs-on:
+                - 'self.hosted'
+                - 'linux'
+            oidc: true
+            script:
+                # Configure OIDC
+                - export AWS_REGION=us-east-1
+                - export AWS_ROLE_ARN=arn:aws:iam::163620805665:role/sidecar-openid-connect-ro-BitbucketDeployRole52FEE1-c49Fm2YAr083
+                - export AWS_WEB_IDENTITY_TOKEN_FILE=$(pwd)/web-identity-token
+                - echo $BITBUCKET_STEP_OIDC_TOKEN > $(pwd)/web-identity-token
+                # Install dependencies
+                - corepack enable
+                - pnpm install
+                # Test
+                - SIDECAR_NAME={{ project-name | remove_first: "sidecar-" }} SIDECAR_VERSION=main pnpm tsx cdk/test.ts
       - step:
           <<: *deploy
           name: Deploy Production
