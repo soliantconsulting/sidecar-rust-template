@@ -101,6 +101,8 @@ pipelines:
           name: Deploy Production
           deployment: production
           trigger: manual
+          artifacts:
+              download: false
   pull-requests:
     '**':
       - step: *check

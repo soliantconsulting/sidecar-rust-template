@@ -6,6 +6,7 @@ use serde_path_to_error::{Path, Segment};
 use std::convert::Infallible;
 use std::future::Future;
 use std::pin::Pin;
+use std::str::FromStr;
 use thiserror::Error;
 
 #[derive(Debug, Serialize)]
@@ -163,30 +164,29 @@ impl From<ParseBodyError> for HttpErrorResponse {
 }
 
 pub fn parse_body<'a, T: Deserialize<'a>>(request: &'a Request) -> Result<T, ParseBodyError> {
-    request
-        .headers()
-        .get(header::CONTENT_TYPE)
-        .map(|ct| match ct.to_str() {
-            Ok(content_type) => match content_type.to_lowercase().as_str() {
-                "application/json" => {
-                    let deserializer =
-                        &mut serde_json::Deserializer::from_slice(request.body().as_ref());
-                    let result: Result<T, _> = serde_path_to_error::deserialize(deserializer);
+    let mime_type = match request.headers().get(header::CONTENT_TYPE) {
+        Some(ct) => match ct.to_str() {
+            Ok(s) => mime::Mime::from_str(s).map_err(|_| ParseBodyError::InvalidContentType)?,
+            Err(_) => return Err(ParseBodyError::InvalidContentType),
+        },
+        None => mime::APPLICATION_JSON,
+    };
 
-                    result.map_err(ParseBodyError::InvalidJsonBody)
-                }
-                "application/x-www-form-urlencoded" => {
-                    let deserializer =
-                        serde_html_form::Deserializer::from_bytes(request.body().as_ref());
-                    let result: Result<T, _> = serde_path_to_error::deserialize(deserializer);
+    match (mime_type.type_(), mime_type.subtype()) {
+        (mime::APPLICATION, mime::JSON) => {
+            let deserializer = &mut serde_json::Deserializer::from_slice(request.body().as_ref());
+            let result: Result<T, _> = serde_path_to_error::deserialize(deserializer);
 
-                    result.map_err(ParseBodyError::InvalidFormBody)
-                }
-                _ => Err(ParseBodyError::UnsupportedContentType),
-            },
-            _ => Err(ParseBodyError::InvalidContentType),
-        })
-        .unwrap_or_else(|| Err(ParseBodyError::MissingContentType))
+            result.map_err(ParseBodyError::InvalidJsonBody)
+        }
+        (mime::APPLICATION, mime::WWW_FORM_URLENCODED) => {
+            let deserializer = serde_html_form::Deserializer::from_bytes(request.body().as_ref());
+            let result: Result<T, _> = serde_path_to_error::deserialize(deserializer);
+
+            result.map_err(ParseBodyError::InvalidFormBody)
+        }
+        _ => Err(ParseBodyError::InvalidContentType),
+    }
 }
 
 #[derive(Debug)]

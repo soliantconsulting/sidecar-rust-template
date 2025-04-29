@@ -1,6 +1,6 @@
 use aws_lambda_events::event::sqs::SqsEvent;
 use aws_lambda_events::sqs::{BatchItemFailure, SqsBatchResponse};
-use fm_script_client::data_api::{DataApiScriptClient, ScriptLayoutContext};
+use fm_script_client::result::Void;
 use fm_script_client::{Connection, ScriptClient};
 use fm_script_client::odata_api::ODataApiScriptClient;
 use lambda_http::tracing::warn;
@@ -34,7 +34,7 @@ impl Handler {
 
             if let Err(err) = self
                 .script_client
-                .execute::<Value, _>(&self.script_name, Some(body))
+                .execute::<Void, _>(&self.script_name, Some(body))
                 .await
             {
                 error!("Failed to execute script: {:?}", err);
