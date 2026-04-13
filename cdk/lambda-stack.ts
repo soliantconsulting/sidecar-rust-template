@@ -24,6 +24,7 @@ export class LambdaStack extends Stack {
             value: api.restApiName,
         });
         new CfnOutput(this, "RestApiArn", {
+            // biome-ignore lint/suspicious/noTemplateCurlyInString: CDK Fn.sub substitution syntax
             value: Fn.sub("arn:aws:apigateway:${AWS::Region}::/restapis/${RestApiId}", {
                 RestApiId: api.restApiId,
             }),
@@ -65,6 +66,7 @@ export class LambdaStack extends Stack {
                 actions: ["ssm:GetParameter"],
                 resources: [
                     Fn.sub(
+                        // biome-ignore lint/suspicious/noTemplateCurlyInString: CDK Fn.sub substitution syntax
                         "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ConfigParameterName}",
                     ),
                 ],
@@ -107,6 +109,7 @@ export class LambdaStack extends Stack {
                 actions: ["ssm:GetParameter"],
                 resources: [
                     Fn.sub(
+                        // biome-ignore lint/suspicious/noTemplateCurlyInString: CDK Fn.sub substitution syntax
                         "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ConfigParameterName}",
                     ),
                 ],

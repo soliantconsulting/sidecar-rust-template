@@ -1,0 +1,5 @@
+sideEffectsCache: false
+onlyBuiltDependencies:
+  - "@biomejs/biome"
+  - esbuild
+  - lefthook

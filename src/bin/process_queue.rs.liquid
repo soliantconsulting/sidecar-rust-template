@@ -38,15 +38,15 @@ impl Handler {
                 .await
             {
                 error!("Failed to execute script: {:?}", err);
-                batch_item_failures.push(BatchItemFailure {
-                    item_identifier: record.message_id.unwrap(),
-                });
+                let mut failure = BatchItemFailure::default();
+                failure.item_identifier = record.message_id.unwrap();
+                batch_item_failures.push(failure);
             };
         }
 
-        Ok(SqsBatchResponse {
-            batch_item_failures,
-        })
+        let mut response = SqsBatchResponse::default();
+        response.batch_item_failures = batch_item_failures;
+        Ok(response)
     }
 }
 

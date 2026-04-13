@@ -1,5 +1,6 @@
 /target
 /cdk.out
+/cdk-dist
 /node_modules
 /pnpm-lock.yaml
 /Cargo.lock
